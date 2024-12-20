@@ -31,16 +31,23 @@ func (g *gen) getMeshFromPC() (*spatialmath.Mesh, error) {
 		return nil, err
 	}
 
+	// err = os.Remove("/Users/nick/Desktop/mesh/lod_100.ply")
+	os.Remove("/Users/nick/Desktop/mesh/lod_100.ply")
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	err = runPoissonReconstruction()
 	if err != nil {
 		return nil, err
 	}
 	// above generates a .ply file locally
 
-	mesh, err := ReadPLY("some path here")
+	mesh, err := ReadPLY("/Users/nick/Desktop/mesh/lod_100.ply")
 	if err != nil {
 		return nil, err
 	}
+	g.logger.Infof("GOT THE MESH BOOO YEAAAAA: %v", mesh.Triangles())
 
 	motionService := g.m
 

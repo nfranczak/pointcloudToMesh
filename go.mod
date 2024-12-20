@@ -12,6 +12,8 @@ require (
 	go.viam.com/utils v0.1.116 // indirect
 )
 
+require github.com/mitchellh/mapstructure v1.5.0
+
 require (
 	cloud.google.com/go v0.115.1 // indirect
 	cloud.google.com/go/auth v0.9.3 // indirect
