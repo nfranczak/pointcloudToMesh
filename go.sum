@@ -94,6 +94,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bep/debounce v1.2.1 h1:v67fRdBA9UQu2NhLFXrSg0Brw7CexQekrBwDMM8bzeY=
 github.com/bep/debounce v1.2.1/go.mod h1:H8yggRPQKLUhUoqrJC1bO2xNya7vanpDl7xR3ISbCJ0=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
+github.com/biotinker/robotcore v0.0.0-20241220194413-4e01070736b3 h1:hke0Zb9dBrNLSiNbG+PEKe25DXHlT5sK+D3LbR9tHMI=
+github.com/biotinker/robotcore v0.0.0-20241220194413-4e01070736b3/go.mod h1:8ImLhiKzMw0LHzHLTQr6kEo+MveyXn38ivKQt/kXPx4=
 github.com/bketelsen/crypt v0.0.3-0.20200106085610-5cbc8cc4026c/go.mod h1:MKsuJmJgSg28kpZDP6UIiPt0e0Oz0kqKNGyRaWEPv84=
 github.com/bkielbasa/cyclop v1.2.0/go.mod h1:qOI0yy6A7dYC4Zgsa72Ppm9kONl0RoIlPbzot9mhmeI=
 github.com/blackjack/webcam v0.6.1 h1:K0T6Q0zto23U99gNAa5q/hFoye6uGcKr2aE6hFoxVoE=
@@ -943,8 +945,6 @@ go.uber.org/zap v1.27.0 h1:aJMhYGrd5QSmlpLMr2MftRKl7t8J8PTZPA732ud/XR8=
 go.uber.org/zap v1.27.0/go.mod h1:GB2qFLM7cTU87MWRP2mPIjqfIDnGu+VIO4V/SdhGo2E=
 go.viam.com/api v0.1.372 h1:Al9P7yojBDdNVAF7nrr5BAbzCvb+vrSp8N7BitbV0mQ=
 go.viam.com/api v0.1.372/go.mod h1:g5eipXHNm0rQmW7DWya6avKcmzoypLmxnMlAaIsE5Ls=
-go.viam.com/rdk v0.55.1 h1:tNsc50pVqbTZf/WUZNJCl6xjL4hSt3Cc24TjOgSP1j4=
-go.viam.com/rdk v0.55.1/go.mod h1:8ImLhiKzMw0LHzHLTQr6kEo+MveyXn38ivKQt/kXPx4=
 go.viam.com/test v1.2.4 h1:JYgZhsuGAQ8sL9jWkziAXN9VJJiKbjoi9BsO33TW3ug=
 go.viam.com/test v1.2.4/go.mod h1:zI2xzosHdqXAJ/kFqcN+OIF78kQuTV2nIhGZ8EzvaJI=
 go.viam.com/utils v0.1.116 h1:hoCj3SsV8LZAOEP75TjMeX57axhravS8rNUYmhpTWtM=

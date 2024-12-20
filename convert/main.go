@@ -2,7 +2,6 @@ package convert
 
 import (
 	"context"
-	"sync"
 
 	"go.viam.com/rdk/components/arm"
 	"go.viam.com/rdk/components/camera"
@@ -10,7 +9,6 @@ import (
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/generic"
 	"go.viam.com/rdk/services/motion"
-	"go.viam.com/rdk/spatialmath"
 )
 
 var Model = resource.NewModel("viam", "pcd-to-mesh", "converter")
@@ -40,16 +38,14 @@ type Config struct {
 }
 
 type gen struct {
-	mu sync.Mutex
 	resource.Resource
 	resource.Named
 	resource.TriviallyReconfigurable
 	resource.TriviallyCloseable
-	logger                   logging.Logger
-	address, entity, payload string
-	a                        arm.Arm
-	c                        camera.Camera
-	m                        motion.Service
+	logger logging.Logger
+	a      arm.Arm
+	c      camera.Camera
+	m      motion.Service
 }
 
 func (g *gen) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
@@ -94,5 +90,6 @@ func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[st
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{"mesh ": spatialmath.NewGeometriesToProto([]spatialmath.Geometry{mesh})}, nil
+
+	return map[string]interface{}{"mesh_triangles": mesh.Triangles()}, nil
 }
