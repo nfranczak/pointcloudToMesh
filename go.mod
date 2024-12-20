@@ -6,6 +6,7 @@ require (
 	github.com/chenzhekl/goply v0.0.0-20190930133256-258c2381defd
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551
 	go.viam.com/rdk v0.55.1
+	// github.com/biotinker/robotcore/tree/20241220_RSDK-9587-generate-series-of-waypoints-to-cover-surface-given-a-pcd-mesh
 	go.viam.com/utils v0.1.116
 )
 

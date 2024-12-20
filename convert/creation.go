@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/pointcloud"
+	"go.viam.com/rdk/referenceframe"
 	"go.viam.com/rdk/spatialmath"
 )
 
@@ -41,7 +42,16 @@ func (g *gen) getMeshFromPC() (*spatialmath.Mesh, error) {
 		return nil, err
 	}
 
-	return mesh, nil
+	motionService := g.m
+
+	tf, err := motionService.GetPose(context.Background(), realsense.Name(), referenceframe.World, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	transformedMesh := mesh.Transform(tf.Pose())
+
+	return transformedMesh, nil
 }
 
 func writePCD(filepath string, whiteBoardPointCloud pointcloud.PointCloud) error {
