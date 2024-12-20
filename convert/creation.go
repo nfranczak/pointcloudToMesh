@@ -80,7 +80,7 @@ func runPoissonReconstruction() error {
 
 	// ABOVE IS THE OLD VERSION FROM WHEN I WAS FIRST EXPERIMENTING WITH EXEC
 
-	cmd := exec.Command("python3.10 draw.py")
+	cmd := exec.Command("../../.venv/bin/python3.10", "../../convert/draw.py")
 	// not sure if the above is done properly
 
 	cmd.Stdout = os.Stdout

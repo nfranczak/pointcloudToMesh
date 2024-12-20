@@ -1,0 +1,17 @@
+{
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "viam:pointcloudToMesh",
+  "visibility": "private",
+  "url": "",
+  "description": "",
+  "models": [
+    {
+      "api": "",
+      "model": ""
+    }
+  ],
+  "build": {
+    "build": "make mac"
+  },
+  "entrypoint": "bin/darwin-arm64/pc-to-mesh"
+}
