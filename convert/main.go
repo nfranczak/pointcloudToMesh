@@ -1,17 +1,21 @@
 package convert
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/golang/geo/r3"
 	"github.com/mitchellh/mapstructure"
 	"go.viam.com/rdk/components/arm"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/logging"
+	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/generic"
 	"go.viam.com/rdk/services/motion"
 	"go.viam.com/rdk/spatialmath"
+	"go.viam.com/rdk/utils"
 )
 
 var Model = resource.NewModel("viam", "pcd-to-mesh", "converter")
@@ -116,6 +120,40 @@ func convertTriangle(t *spatialmath.Triangle) MyTriangle {
 
 // DoCommand echos input back to the caller.
 func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
+	fmt.Println("do i ever get here?")
+	if pcInterface, ok := cmd["cropped"]; ok {
+		// get the pointcloud bytes from Extras and convert back into a pointcloud
+		pcdSlice, err := utils.AssertType[[]interface{}](pcInterface)
+		if err != nil {
+			return nil, err
+		}
+		uInt8Slice := []uint8{}
+		for _, v := range pcdSlice {
+			data, err := utils.AssertType[float64](v)
+			if err != nil {
+				return nil, err
+			}
+			uInt8Slice = append(uInt8Slice, uint8(data))
+		}
+
+		data, err := utils.AssertType[[]byte](uInt8Slice)
+		if err != nil {
+			return nil, err
+		}
+
+		pc, err := pointcloud.ReadPCD(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+		// _ = pc
+		fmt.Println("WE ARE INSIDE THE GENERIC SERVICE AND THIS IS THE PC: ", pc)
+		// read the pcd here
+		// turn pcd into a mesh
+		// read mesh
+		// send mesh's back to caller over the wire from which they can construct the spatialmath.mesh representation
+		return nil, nil
+	}
+	g.logger.Info("the command that you passed in was not 'cropped' so we are executing the default command")
 	mesh, err := g.getMeshFromPC()
 	if err != nil {
 		return nil, err
@@ -133,4 +171,5 @@ func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[st
 	println("decoded to", len(asMap))
 
 	return map[string]interface{}{"mesh_triangles": asMap}, nil
+
 }
