@@ -115,13 +115,7 @@ func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[st
 			return nil, err
 		}
 
-		// convert ply file into a slice of bytes which are then sent over the wire
-		plyFileAsBytes, err := plyToBytes(g.workingDirectory + meshSubDir + lodPLY)
-		if err != nil {
-			return nil, err
-		}
-
-		return map[string]interface{}{"plyFileBytes": plyFileAsBytes}, nil
+		return map[string]interface{}{"plyFileLocation": g.workingDirectory + meshSubDir + lodPLY}, nil
 	}
 
 	// adds clouds to storage
@@ -184,12 +178,7 @@ func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[st
 		// wipe the pointcloud storage clean
 		defer removeContents(pointCloudStoragePath)
 
-		plyFileAsBytes, err := plyToBytes(g.workingDirectory + meshSubDir + lodPLY)
-		if err != nil {
-			return nil, err
-		}
-
-		return map[string]interface{}{"plyFileBytes": plyFileAsBytes}, nil
+		return map[string]interface{}{"plyFileLocation": g.workingDirectory + meshSubDir + lodPLY}, nil
 	}
 
 	return cmd, nil

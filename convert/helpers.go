@@ -95,10 +95,6 @@ func (g *gen) meshSurfaceReconstruction() error {
 	return cmd.Run()
 }
 
-func plyToBytes(path string) ([]byte, error) {
-	return os.ReadFile(path)
-}
-
 func removeContents(dirPath string) error {
 	// List all the files and subdirectories in the specified directory
 	files, err := os.ReadDir(dirPath)
