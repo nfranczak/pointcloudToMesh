@@ -16,7 +16,7 @@ def get_point_cloud(input_path, dataname, rad, maxnn):
     pcd.points = o3d.utility.Vector3dVector(points_subset)
 
     # Estimate normals for pcd directly
-    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=rad, max_nn=maxnn))
 
     # Check if normals are assigned
     if not pcd.has_normals():

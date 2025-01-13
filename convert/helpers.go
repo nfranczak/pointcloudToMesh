@@ -77,6 +77,8 @@ func (g *gen) meshSurfaceReconstruction() error {
 	g.logger.Infof("g.workingDirectory+meshSubDir: %s", g.workingDirectory+meshSubDir)
 	g.logger.Infof("fileName: %s", fileName)
 	g.logger.Infof("g.meshAlgorithm: %s", g.meshAlgorithm)
+	g.logger.Infof("strconv.FormatFloat(g.radius, 'g', -1, 64): %s", strconv.FormatFloat(g.radius, 'g', -1, 64))
+	g.logger.Infof("strconv.Itoa(g.maxNN): %s", strconv.Itoa(g.maxNN))
 
 	cmd := exec.Command(
 		g.pythonPath,

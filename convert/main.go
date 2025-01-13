@@ -35,13 +35,7 @@ func newConverter(ctx context.Context, deps resource.Dependencies, conf resource
 }
 
 func (cfg *Config) Validate(path string) ([]string, error) {
-	return []string{
-		// cfg.WorkingDirectory,
-		// cfg.MeshAlgorithm,
-		// cfg.PythonPath,
-		// cfg.DownSample,
-		// motion.Named("builtin").String(),
-	}, nil
+	return []string{}, nil
 }
 
 type Config struct {
@@ -50,7 +44,6 @@ type Config struct {
 	PythonPath       string  `json:"python_path"`
 	Radius           float64 `json:"radius"`
 	MaxNN            int     `json:"max_nn"`
-	// DownSample       float64 `json:"down_sample`
 }
 
 type gen struct {
@@ -83,6 +76,8 @@ func (g *gen) Reconfigure(ctx context.Context, deps resource.Dependencies, conf 
 		return errors.New("did not specify valid mesh algorithm")
 	}
 	g.meshAlgorithm = config.MeshAlgorithm
+	g.radius = config.Radius
+	g.maxNN = config.MaxNN
 
 	g.logger.Info("done reconfiguring")
 	return nil
