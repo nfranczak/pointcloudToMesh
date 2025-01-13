@@ -115,16 +115,21 @@ func removeContents(dirPath string) error {
 func (g *gen) meshSurfaceReconstruction() error {
 	pathToFile := "../../convert/main.py"
 
-	// inputPath := g.workingDirectory
-	// outputPath := g.workingDirectory + meshSubDir
-	// dataName := fileName
-	// formattedFileCall := pathToFile + " " + inputPath + " " + outputPath + " " + dataName + " " + g.meshAlgorithm
-	// g.logger.Infof("formattedFileCall %s", formattedFileCall)
-
 	g.logger.Infof("g.pythonPath %s", g.pythonPath)
+	g.logger.Infof("pathToFile: %s", pathToFile)
+	g.logger.Infof("g.workingDirectory: %s", g.workingDirectory)
+	g.logger.Infof("g.workingDirectory+meshSubDir: %s", g.workingDirectory+meshSubDir)
+	g.logger.Infof("fileName: %s", fileName)
+	g.logger.Infof("g.meshAlgorithm: %s", g.meshAlgorithm)
 
-	cmd := exec.Command(g.pythonPath, pathToFile)
-	// cmd := exec.Command(g.pythonPath, formattedFileCall)
+	cmd := exec.Command(
+		g.pythonPath,
+		pathToFile,
+		g.workingDirectory,
+		g.workingDirectory+meshSubDir,
+		fileName,
+		g.meshAlgorithm,
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

@@ -22,6 +22,12 @@ def create_BPA_mesh(pcd, output_path):
 
     # Save the mesh
     o3d.io.write_triangle_mesh(output_path + "bpa_mesh.ply", dec_mesh)
+    
+    # TESTING OUT FILTERING 
+    # https://www.open3d.org/docs/latest/tutorial/Basic/mesh.html#Average-filter
+    # mesh_out = bpa_mesh.filter_smooth_simple(number_of_iterations=1)
+    # mesh_out.compute_vertex_normals()
+    # o3d.visualization.draw_geometries([mesh_out])
 
     # Generate LoDs
     lod_mesh_export(bpa_mesh, [100000, 50000, 10000, 1000, 100], ".ply", output_path)
