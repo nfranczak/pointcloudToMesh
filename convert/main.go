@@ -3,6 +3,7 @@ package convert
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
@@ -12,9 +13,10 @@ import (
 var Model = resource.NewModel("viam", "pcd-to-mesh", "converter")
 
 const (
-	fileName   = "merged.pcd"
-	meshSubDir = "mesh/"
-	lodPLY     = "lod_100.ply"
+	fileName         = "merged.pcd"
+	meshSubDir       = "mesh/"
+	pointcloudSubDir = "modulePointClouds/"
+	lodPLY           = "lod_100.ply"
 )
 
 func init() {
@@ -43,9 +45,11 @@ func (cfg *Config) Validate(path string) ([]string, error) {
 }
 
 type Config struct {
-	WorkingDirectory string `json:"working_directory"`
-	MeshAlgorithm    string `json:"mesh_algorithm"`
-	PythonPath       string `json:"python_path"`
+	WorkingDirectory string  `json:"working_directory"`
+	MeshAlgorithm    string  `json:"mesh_algorithm"`
+	PythonPath       string  `json:"python_path"`
+	Radius           float64 `json:"radius"`
+	MaxNN            int     `json:"max_nn"`
 	// DownSample       float64 `json:"down_sample`
 }
 
@@ -58,6 +62,8 @@ type gen struct {
 	workingDirectory string
 	pythonPath       string
 	meshAlgorithm    string
+	radius           float64
+	maxNN            int
 }
 
 func (g *gen) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
@@ -93,29 +99,103 @@ func (g *gen) Close(ctx context.Context) error {
 
 // DoCommand echos input back to the caller.
 func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
-	pcInterface, ok := cmd["pointcloud"]
-	if !ok {
-		return nil, errors.New("command was incorrectly specified")
-	}
-	pc, err := getPointCloudFromBytes(pcInterface)
-	if err != nil {
-		return nil, err
-	}
-	g.logger.Infof("got the pointcloud from bytes: %v", pc)
+	// reads in a passed in cloud and returns it as a .ply file representing a mesh
+	if pcInterface, ok := cmd["pointcloud"]; ok {
+		pc, err := getPointCloudFromBytes(pcInterface)
+		if err != nil {
+			return nil, err
+		}
+		g.logger.Infof("got the pointcloud from bytes: %v", pc)
 
-	// write to a .pcd file so that mesh reconstruction can read from it
-	err = g.writeToFile(pc)
-	if err != nil {
-		return nil, err
-	}
-	g.logger.Infof("wrote the the pointcloud to a file")
+		// write to a .pcd file so that mesh reconstruction can read from it
+		err = g.writeToFile(pc, g.workingDirectory+fileName)
+		if err != nil {
+			return nil, err
+		}
+		g.logger.Infof("wrote the the pointcloud to a file")
 
-	// get the spatialmath.Mesh
-	mesh, err := g.getMeshFromPointCloud()
-	if err != nil {
-		return nil, err
+		// get the mesh as a .ply file locally
+		err = g.getMeshFromPointCloud()
+		if err != nil {
+			return nil, err
+		}
+
+		// convert ply file into a slice of bytes which are then sent over the wire
+		plyFileAsBytes, err := plyToBytes(g.workingDirectory + meshSubDir + lodPLY)
+		if err != nil {
+			return nil, err
+		}
+
+		return map[string]interface{}{"plyFileBytes": plyFileAsBytes}, nil
 	}
 
-	// generate json representation of mesh
-	return map[string]interface{}{"mesh_triangles": generateMeshJson(mesh)}, nil
+	// adds clouds to storage
+	if pcInterface, ok := cmd["addCloud"]; ok {
+		pc, err := getPointCloudFromBytes(pcInterface)
+		if err != nil {
+			return nil, err
+		}
+		g.logger.Infof("got the pointcloud from bytes: %v", pc)
+
+		// check how many files exist in
+		pointCloudStoragePath := g.workingDirectory + pointcloudSubDir
+		g.logger.Infof("counting the files in this path: %s", pointCloudStoragePath)
+		numFiles, err := countFiles(pointCloudStoragePath)
+		if err != nil {
+			return nil, err
+		}
+
+		// write the pointcloud to file
+		writePointCloudPath := pointCloudStoragePath + "cloud" + strconv.Itoa(numFiles) + ".pcd"
+		g.logger.Infof("writing pointcloud here: %s", writePointCloudPath)
+		err = g.writeToFile(pc, writePointCloudPath)
+		if err != nil {
+			return nil, err
+		}
+		g.logger.Infof("wrote the the pointcloud to a file")
+
+		return nil, nil
+	}
+
+	// reads the clouds in storage, merges them together and returns the representing mesh
+	if _, ok := cmd["merge"]; ok {
+		// read the pointclouds from path
+		pointCloudStoragePath := g.workingDirectory + pointcloudSubDir
+		g.logger.Infof("reading the files in this path: %s", pointCloudStoragePath)
+		allClouds, err := readFiles(pointCloudStoragePath)
+		if err != nil {
+			return nil, err
+		}
+
+		// merge them together
+		mergedCloud, err := joinClouds(g.logger, allClouds)
+		if err != nil {
+			return nil, err
+		}
+
+		// write the merged cloud to a file
+		err = g.writeToFile(mergedCloud, g.workingDirectory+fileName)
+		if err != nil {
+			return nil, err
+		}
+		g.logger.Infof("wrote the the pointcloud to a file")
+
+		// get the spatialmath.Mesh
+		err = g.getMeshFromPointCloud()
+		if err != nil {
+			return nil, err
+		}
+
+		// wipe the pointcloud storage clean
+		defer removeContents(pointCloudStoragePath)
+
+		plyFileAsBytes, err := plyToBytes(g.workingDirectory + meshSubDir + lodPLY)
+		if err != nil {
+			return nil, err
+		}
+
+		return map[string]interface{}{"plyFileBytes": plyFileAsBytes}, nil
+	}
+
+	return cmd, nil
 }

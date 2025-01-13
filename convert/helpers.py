@@ -1,7 +1,7 @@
 import numpy as np
 import open3d as o3d
 
-def get_point_cloud(input_path, dataname):
+def get_point_cloud(input_path, dataname, rad, maxnn):
     # Load the point cloud from the .pcd file
     point_cloud = o3d.io.read_point_cloud(input_path+dataname)
 

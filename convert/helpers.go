@@ -1,17 +1,16 @@
 package convert
 
 import (
-	"bufio"
 	"bytes"
-	"errors"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 
-	"github.com/chenzhekl/goply"
-
-	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/rdk/utils"
@@ -44,9 +43,7 @@ func getPointCloudFromBytes(pcInterface interface{}) (pointcloud.PointCloud, err
 	return pc, nil
 }
 
-func (g *gen) writeToFile(cloud pointcloud.PointCloud) error {
-	pcdPath := g.workingDirectory + fileName
-	// pcdPath should  be "/Users/nick/Desktop/whiteboard.pcd"
+func (g *gen) writeToFile(cloud pointcloud.PointCloud, pcdPath string) error {
 	g.logger.Infof("we are writing the pointcloud to this file: %s", pcdPath)
 	file, err := os.Create(pcdPath)
 	if err != nil {
@@ -61,26 +58,43 @@ func (g *gen) writeToFile(cloud pointcloud.PointCloud) error {
 	return nil
 }
 
-func (g *gen) getMeshFromPointCloud() (*spatialmath.Mesh, error) {
+func (g *gen) getMeshFromPointCloud() error {
 	err := removeContents(g.workingDirectory + meshSubDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// generates a .ply file locally
-	err = g.meshSurfaceReconstruction()
-	if err != nil {
-		return nil, err
-	}
+	return g.meshSurfaceReconstruction()
+}
 
-	g.logger.Infof("removed the ")
+func (g *gen) meshSurfaceReconstruction() error {
+	pathToFile := "../../convert/main.py"
 
-	mesh, err := readPLY(g.workingDirectory + meshSubDir + lodPLY)
-	if err != nil {
-		return nil, err
-	}
+	g.logger.Infof("g.pythonPath %s", g.pythonPath)
+	g.logger.Infof("pathToFile: %s", pathToFile)
+	g.logger.Infof("g.workingDirectory: %s", g.workingDirectory)
+	g.logger.Infof("g.workingDirectory+meshSubDir: %s", g.workingDirectory+meshSubDir)
+	g.logger.Infof("fileName: %s", fileName)
+	g.logger.Infof("g.meshAlgorithm: %s", g.meshAlgorithm)
 
-	return mesh, nil
+	cmd := exec.Command(
+		g.pythonPath,
+		pathToFile,
+		g.workingDirectory,
+		g.workingDirectory+meshSubDir,
+		fileName,
+		g.meshAlgorithm,
+		strconv.FormatFloat(g.radius, 'g', -1, 64),
+		strconv.Itoa(g.maxNN),
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func plyToBytes(path string) ([]byte, error) {
+	return os.ReadFile(path)
 }
 
 func removeContents(dirPath string) error {
@@ -112,54 +126,65 @@ func removeContents(dirPath string) error {
 	return nil
 }
 
-func (g *gen) meshSurfaceReconstruction() error {
-	pathToFile := "../../convert/main.py"
+func countFiles(path string) (int, error) {
+	// Ensure the directory exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return 0, err
+	}
 
-	g.logger.Infof("g.pythonPath %s", g.pythonPath)
-	g.logger.Infof("pathToFile: %s", pathToFile)
-	g.logger.Infof("g.workingDirectory: %s", g.workingDirectory)
-	g.logger.Infof("g.workingDirectory+meshSubDir: %s", g.workingDirectory+meshSubDir)
-	g.logger.Infof("fileName: %s", fileName)
-	g.logger.Infof("g.meshAlgorithm: %s", g.meshAlgorithm)
+	// Read the directory contents
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return 0, err
+	}
 
-	cmd := exec.Command(
-		g.pythonPath,
-		pathToFile,
-		g.workingDirectory,
-		g.workingDirectory+meshSubDir,
-		fileName,
-		g.meshAlgorithm,
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	// Count the files
+	return len(files), nil
 }
 
-func readPLY(path string) (*spatialmath.Mesh, error) {
-	readerRaw, err := os.Open(path)
+func readFiles(path string) ([]pointcloud.PointCloud, error) {
+	allClouds := []pointcloud.PointCloud{}
+	// Ensure the directory exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, err
+	}
+
+	// Read the directory contents
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
-	reader := bufio.NewReader(readerRaw)
-	ply := goply.New(reader)
-	vertices := ply.Elements("vertex")
-	faces := ply.Elements("face")
-	triangles := []*spatialmath.Triangle{}
-	for _, face := range faces {
 
-		pts := []r3.Vector{}
-		idxIface := face["vertex_indices"]
-		for _, i := range idxIface.([]interface{}) {
-			pts = append(pts, r3.Vector{
-				X: 1000 * vertices[int(i.(uint32))]["x"].(float64),
-				Y: 1000 * vertices[int(i.(uint32))]["y"].(float64),
-				Z: 1000 * vertices[int(i.(uint32))]["z"].(float64)})
+	// iterate through the files and convert them into a pointcloud object
+	for _, f := range files {
+		if strings.Contains(f.Name(), ".pcd") {
+			fmt.Println("path + f.Name(): ", path+f.Name())
+			pointCloudFile, err := os.Open(path + f.Name())
+			if err != nil {
+				fmt.Println("return err here 1")
+				return nil, err
+			}
+			pc, err := pointcloud.ReadPCD(pointCloudFile)
+			if err != nil {
+				fmt.Println("return err here 2")
+				return nil, err
+			}
+			allClouds = append(allClouds, pc)
 		}
-		if len(pts) != 3 {
-			return nil, errors.New("triangle did not have three points")
-		}
-		tri := spatialmath.NewTriangle(pts[0], pts[1], pts[2])
-		triangles = append(triangles, tri)
+
 	}
-	return spatialmath.NewMesh(spatialmath.NewZeroPose(), triangles), nil
+
+	return allClouds, nil
+}
+
+func joinClouds(logger logging.Logger, allClouds []pointcloud.PointCloud) (pointcloud.PointCloud, error) {
+	suplimentaryFuncs := []pointcloud.CloudAndOffsetFunc{}
+	for _, cloud := range allClouds {
+		suplimentaryFuncs = append(suplimentaryFuncs,
+			func(context context.Context) (pointcloud.PointCloud, spatialmath.Pose, error) {
+				return cloud, nil, nil
+			},
+		)
+	}
+	return pointcloud.MergePointClouds(context.Background(), suplimentaryFuncs, logger)
 }

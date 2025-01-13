@@ -12,7 +12,9 @@ def main():
     parser.add_argument('input_path', type=str, help="First argument -- input path")
     parser.add_argument('output_path', type=str, help="Second argument -- output path")
     parser.add_argument('data_name', type=str, help="Third argument -- data_name")
-    parser.add_argument('algo_name', type=str, help="Third argument -- algo_name")
+    parser.add_argument('algo_name', type=str, help="Fourth argument -- algo_name")
+    parser.add_argument('radius', type=str, help="Fifth argument -- radius")
+    parser.add_argument('max_nn', type=str, help="Sixth argument -- max_nn")
     
     # Parse the arguments
     args = parser.parse_args()
@@ -24,19 +26,27 @@ def main():
     print("type(args.data_name): ", type(args.data_name))
     print("args.algo_name: ", args.algo_name)
     print("type(args.algo_name): ", type(args.algo_name))
+    print("args.radius: ", args.radius)
+    print("type(args.radius): ", type(args.radius))
+    print("args.max_nn: ", args.max_nn)
+    print("type(args.max_nn): ", type(args.max_nn))
     
     input_path = args.input_path
     output_path = args.output_path
     data_name = args.data_name
     algo_name = args.algo_name
+    radius = float(args.radius)
+    max_nn = int(args.max_nn)
     
     print("input_path: ", input_path)
     print("output_path: ", output_path)
     print("data_name: ", data_name)
     print("algo_name: ", algo_name)
+    print("radius: ", radius)
+    print("max_nn: ", max_nn)
     
     
-    pcd = get_point_cloud(input_path, data_name)
+    pcd = get_point_cloud(input_path, data_name, radius, max_nn)
     
     # Downsample pointcloud
     downSampled_PointCloud = de_duplicate(pcd)
