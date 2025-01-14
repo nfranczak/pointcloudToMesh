@@ -1,9 +1,14 @@
 package convert
 
 import (
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"os"
 	"strconv"
+	"strings"
 
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
@@ -13,10 +18,11 @@ import (
 var Model = resource.NewModel("viam", "pcd-to-mesh", "converter")
 
 const (
-	fileName         = "merged.pcd"
-	meshSubDir       = "mesh/"
-	pointcloudSubDir = "modulePointClouds/"
-	lodPLY           = "lod_100.ply"
+	fileName             = "merged.pcd"
+	meshSubDir           = "mesh/"
+	pointcloudSubDir     = "modulePointClouds/"
+	gZipPointCloudSubDir = "gZipPointClouds/"
+	lodPLY               = "lod_100.ply"
 )
 
 func init() {
@@ -181,5 +187,87 @@ func (g *gen) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[st
 		return map[string]interface{}{"plyFileLocation": g.workingDirectory + meshSubDir + lodPLY}, nil
 	}
 
+	if _, ok := cmd["getPCD"]; ok {
+		g.logger.Info("HELLO THERE MIKO")
+		// aim is to return what is in the storage location
+		pointCloudStoragePath := g.workingDirectory + pointcloudSubDir
+		g.logger.Infof("pointCloudStoragePath: %s", pointCloudStoragePath)
+
+		// relevantFiles := []os.File{}
+		// Read the directory contents
+		files, err := os.ReadDir(pointCloudStoragePath)
+		if err != nil {
+			return nil, err
+		}
+		g.logger.Info("WE HAVE READ THE DIR")
+
+		// iterate through the PCD files and gzip them
+		if len(files) == 0 {
+			return nil, errors.New("no files left to gZip")
+		}
+		loc := ""
+		for _, f := range files {
+			if strings.Contains(f.Name(), ".pcd") {
+				g.logger.Info("HELLO THERE 2222222")
+				g.logger.Infof("g.workingDirectory+gZipPointCloudSubDir: %s", g.workingDirectory+gZipPointCloudSubDir)
+				g.logger.Infof("THIS PART IS IMPORTANT IT IS THE f.Name(): %s", f.Name())
+				gZipFileLocation, err := createGZipFile(pointCloudStoragePath+f.Name(), f.Name(), g.workingDirectory+gZipPointCloudSubDir, g.logger)
+				if err != nil {
+					g.logger.Info("returning error here")
+					return nil, err
+				}
+				loc = gZipFileLocation
+
+				// defer removing the pcd file
+				defer os.Remove(pointCloudStoragePath + f.Name())
+				break
+			}
+		}
+
+		gZipAsBytes, err := json.Marshal(loc)
+		if err != nil {
+			return nil, err
+		}
+		defer os.Remove(loc)
+		return map[string]interface{}{"gZipBytes": gZipAsBytes}, nil
+	}
+
 	return cmd, nil
+}
+
+func createGZipFile(pathToPCD, pcdFileName, pathToGZip string, logger logging.Logger) (string, error) {
+	// THIS WON'T WORK, THIS NEEDS THE ABSOLUTE PATH TO THE FILE
+	logger.Infof("pathToPCD: %s", pathToPCD)
+	logger.Infof("pcdFileName: %s", pcdFileName)
+	inputFile, err := os.Open(pathToPCD)
+	if err != nil {
+		logger.Info("RETURNING ERROR HERE 1")
+		return "", err
+	}
+	defer inputFile.Close()
+
+	// pcdFileName := inputFile.Name()
+	logger.Infof("pcdFileName: %s", pcdFileName)
+	gZipPcdFileName := pcdFileName + ".gz"
+
+	// THIS WON'T WORK, IT NEEDS TO ABSOLUTE PATH TO THE FILE
+	logger.Infof("pathToGZip + gZipPcdFileName: %s", pathToGZip+gZipPcdFileName)
+	outputFile, err := os.Create(pathToGZip + gZipPcdFileName)
+	if err != nil {
+		logger.Info("RETURNING ERROR HERE 2")
+		return "", err
+	}
+	defer outputFile.Close()
+
+	// Create a gzip writer
+	gzipWriter := gzip.NewWriter(outputFile)
+	defer gzipWriter.Close()
+
+	// Copy the content from the input file to the gzip writer
+	_, err = io.Copy(gzipWriter, inputFile)
+	if err != nil {
+		return "", err
+	}
+
+	return pathToGZip + gZipPcdFileName, err
 }
